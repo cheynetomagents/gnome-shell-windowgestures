@@ -121,17 +121,18 @@ export default class extends ExtensionPreferences {
             "Quick settings",       // 21
             "Notification",         // 22
             "Run (Alt+F2)",         // 23
+            "Send keystrokes",      // 24
 
         ];
 
         const act1 = new Adw.PreferencesGroup({
             title: (isSwap ? "3" : "4") + " Fingers Actions"
         });
-        this._createCombo(act1, "swipe4-left",
+        this._createActionCombo(act1, "swipe4-left",
             "Swipe left", "", action_list);
-        this._createCombo(act1, "swipe4-right",
+        this._createActionCombo(act1, "swipe4-right",
             "Swipe right", "", action_list);
-        this._createCombo(act1, "swipe4-updown",
+        this._createActionCombo(act1, "swipe4-updown",
             "Swipe down",
             "Swipe up > down if Tap and hold to move/resize window disabled",
             action_list);
@@ -139,25 +140,25 @@ export default class extends ExtensionPreferences {
         const act2 = new Adw.PreferencesGroup({
             title: (isSwap ? "4" : "3") + " Fingers Actions"
         });
-        this._createCombo(act2, "swipe3-down",
+        this._createActionCombo(act2, "swipe3-down",
             "Swipe down", "", action_list);
-        this._createCombo(act2, "swipe3-left",
+        this._createActionCombo(act2, "swipe3-left",
             "Swipe down > left", "", action_list);
-        this._createCombo(act2, "swipe3-right",
+        this._createActionCombo(act2, "swipe3-right",
             "Swipe down > right", "", action_list);
-        this._createCombo(act2, "swipe3-downup",
+        this._createActionCombo(act2, "swipe3-downup",
             "Swipe down > up", "", action_list);
 
         var act3 = null;
         if (SUPPORT_PINCH) {
             act3 = new Adw.PreferencesGroup({ title: "Pinch Actions" });
-            this._createCombo(act3, "pinch3-in",
+            this._createActionCombo(act3, "pinch3-in",
                 "Pinch-in 3 fingers", "", action_list);
-            this._createCombo(act3, "pinch3-out",
+            this._createActionCombo(act3, "pinch3-out",
                 "Pinch-out 3 fingers", "", action_list);
-            this._createCombo(act3, "pinch4-in",
+            this._createActionCombo(act3, "pinch4-in",
                 "Pinch-in 4 fingers", "", action_list);
-            this._createCombo(act3, "pinch4-out",
+            this._createActionCombo(act3, "pinch4-out",
                 "Pinch-out 4 fingers", "", action_list);
         }
 
@@ -290,6 +291,38 @@ export default class extends ExtensionPreferences {
         parent.add(el);
         this.getSettings().bind(
             bind, el, 'value', Gio.SettingsBindFlags.DEFAULT);
+    }
+
+    /* Create Action Combo Row with optional keystroke entry */
+    _createActionCombo(parent, bind, title, subtitle, items) {
+        const SEND_KEYSTROKES_ID = 24;
+        const itemStr = new Gtk.StringList();
+        for (var i = 0; i < items.length; i++) {
+            itemStr.append(items[i]);
+        }
+        const comboRow = new Adw.ComboRow({
+            title: title,
+            subtitle: subtitle,
+            model: itemStr,
+            selected: this.getSettings().get_int(bind),
+        });
+
+        const entryRow = new Adw.EntryRow({
+            title: "Keystroke (e.g. <Control><Shift>t, <Super>e)",
+            text: this.getSettings().get_string(bind + '-keys'),
+            visible: (comboRow.selected === SEND_KEYSTROKES_ID),
+        });
+        entryRow.connect('changed', widget => {
+            this.getSettings().set_string(bind + '-keys', widget.text);
+        });
+
+        comboRow.connect('notify::selected', widget => {
+            this.getSettings().set_int(bind, widget.selected);
+            entryRow.visible = (widget.selected === SEND_KEYSTROKES_ID);
+        });
+
+        parent.add(comboRow);
+        parent.add(entryRow);
     }
 
     /* Create Combo Row */

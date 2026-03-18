@@ -111,6 +111,51 @@
             <range min="0" max="30"/>
         </key>
 
+        <key type="s" name="swipe4-left-keys">
+            <default>''</default>
+            <summary>Swipe 4 Fingers Left Custom Keys</summary>
+        </key>
+        <key type="s" name="swipe4-right-keys">
+            <default>''</default>
+            <summary>Swipe 4 Fingers Right Custom Keys</summary>
+        </key>
+        <key type="s" name="swipe4-updown-keys">
+            <default>''</default>
+            <summary>Swipe 4 Fingers Up+Down Custom Keys</summary>
+        </key>
+        <key type="s" name="swipe3-down-keys">
+            <default>''</default>
+            <summary>Swipe 3 Fingers Down Custom Keys</summary>
+        </key>
+        <key type="s" name="swipe3-left-keys">
+            <default>''</default>
+            <summary>Swipe 3 Fingers Left Custom Keys</summary>
+        </key>
+        <key type="s" name="swipe3-right-keys">
+            <default>''</default>
+            <summary>Swipe 3 Fingers Right Custom Keys</summary>
+        </key>
+        <key type="s" name="swipe3-downup-keys">
+            <default>''</default>
+            <summary>Swipe 3 Fingers Down+Up Custom Keys</summary>
+        </key>
+        <key type="s" name="pinch3-in-keys">
+            <default>''</default>
+            <summary>Pinch-In 3 Fingers Custom Keys</summary>
+        </key>
+        <key type="s" name="pinch3-out-keys">
+            <default>''</default>
+            <summary>Pinch-Out 3 Fingers Custom Keys</summary>
+        </key>
+        <key type="s" name="pinch4-in-keys">
+            <default>''</default>
+            <summary>Pinch-In 4 Fingers Custom Keys</summary>
+        </key>
+        <key type="s" name="pinch4-out-keys">
+            <default>''</default>
+            <summary>Pinch-Out 4 Fingers Custom Keys</summary>
+        </key>
+
         <key type="i" name="pinch-in-scale">
             <default>50</default>
             <summary>Pinch-In Scale</summary>

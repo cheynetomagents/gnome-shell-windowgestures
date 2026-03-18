@@ -1620,6 +1620,50 @@ class Manager {
         return Clutter.EVENT_PROPAGATE;
     }
 
+    // Parse GTK accelerator string into Clutter keyvals
+    _parseAccelerator(accel) {
+        if (!accel) return null;
+        let keys = [];
+        let remaining = accel;
+
+        const modMap = {
+            'control': Clutter.KEY_Control_L,
+            'ctrl': Clutter.KEY_Control_L,
+            'shift': Clutter.KEY_Shift_L,
+            'alt': Clutter.KEY_Alt_L,
+            'super': Clutter.KEY_Super_L,
+            'meta': Clutter.KEY_Meta_L,
+            'primary': Clutter.KEY_Control_L,
+        };
+
+        let match;
+        while ((match = remaining.match(/^<(\w+)>/))) {
+            let mod = match[1].toLowerCase();
+            if (modMap[mod]) {
+                keys.push(modMap[mod]);
+            }
+            remaining = remaining.substring(match[0].length);
+        }
+
+        if (remaining.length > 0) {
+            if (remaining.length === 1) {
+                let keyval = Clutter['KEY_' + remaining.toLowerCase()];
+                if (keyval) keys.push(keyval);
+            } else {
+                let keyval = Clutter['KEY_' + remaining];
+                if (keyval) {
+                    keys.push(keyval);
+                } else {
+                    // Try common aliases
+                    let keyval2 = Clutter['KEY_' + remaining.charAt(0).toUpperCase() + remaining.slice(1).toLowerCase()];
+                    if (keyval2) keys.push(keyval2);
+                }
+            }
+        }
+
+        return keys.length > 0 ? keys : null;
+    }
+
     // Get Action Id
     _actionIdGet(type) {
         let cfg_name = "";
@@ -1642,6 +1686,7 @@ class Manager {
                 }
                 return 0;
         }
+        this._gesture.slotName = cfg_name;
         return this._settings.get_int(cfg_name);
     }
 
@@ -2487,6 +2532,21 @@ class Manager {
             }
             // Run (Alt+F2)
             this._sendKeyPress([Clutter.KEY_Alt_L, Clutter.KEY_F2]);
+        }
+
+        else if (id == 24) {
+            if (!state || progress < 1.0) {
+                return;
+            }
+            // Send custom keystrokes
+            let slotName = this._gesture.slotName;
+            if (slotName) {
+                let accel = this._settings.get_string(slotName + '-keys');
+                let keys = this._parseAccelerator(accel);
+                if (keys && keys.length > 0) {
+                    this._sendKeyPress(keys);
+                }
+            }
         }
 
         else if (id >= 50 && id <= 53) {
