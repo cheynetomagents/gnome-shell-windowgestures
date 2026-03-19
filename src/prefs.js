@@ -293,7 +293,7 @@ export default class extends ExtensionPreferences {
             bind, el, 'value', Gio.SettingsBindFlags.DEFAULT);
     }
 
-    /* Create Action Combo Row with optional keystroke entry */
+    /* Create Action Combo Row with optional keystroke entry + record button */
     _createActionCombo(parent, bind, title, subtitle, items) {
         const SEND_KEYSTROKES_ID = 24;
         const itemStr = new Gtk.StringList();
@@ -316,6 +316,18 @@ export default class extends ExtensionPreferences {
             this.getSettings().set_string(bind + '-keys', widget.text);
         });
 
+        const recordBtn = new Gtk.Button({
+            icon_name: 'media-record-symbolic',
+            tooltip_text: 'Record shortcut',
+            valign: Gtk.Align.CENTER,
+            css_classes: ['flat'],
+        });
+        recordBtn.connect('clicked', () => {
+            this._showKeystrokeDialog(
+                entryRow.get_root(), entryRow, bind);
+        });
+        entryRow.add_suffix(recordBtn);
+
         comboRow.connect('notify::selected', widget => {
             this.getSettings().set_int(bind, widget.selected);
             entryRow.visible = (widget.selected === SEND_KEYSTROKES_ID);
@@ -323,6 +335,89 @@ export default class extends ExtensionPreferences {
 
         parent.add(comboRow);
         parent.add(entryRow);
+    }
+
+    /* Show shortcut capture dialog */
+    _showKeystrokeDialog(parentWindow, entryRow, bind) {
+        const dialog = new Gtk.Window({
+            modal: true,
+            transient_for: parentWindow,
+            title: '',
+            default_width: 360,
+            default_height: 180,
+            resizable: false,
+            decorated: true,
+        });
+
+        const box = new Gtk.Box({
+            orientation: Gtk.Orientation.VERTICAL,
+            spacing: 12,
+            margin_top: 30,
+            margin_bottom: 30,
+            margin_start: 30,
+            margin_end: 30,
+            valign: Gtk.Align.CENTER,
+            halign: Gtk.Align.CENTER,
+        });
+
+        const label = new Gtk.Label({
+            label: 'Press a key combination',
+            css_classes: ['title-2'],
+        });
+
+        const sublabel = new Gtk.Label({
+            label: 'Press Escape to cancel',
+            css_classes: ['dim-label'],
+        });
+
+        box.append(label);
+        box.append(sublabel);
+        dialog.set_child(box);
+
+        const controller = new Gtk.EventControllerKey();
+        controller.connect('key-pressed',
+            (_ctrl, keyval, _keycode, state) => {
+                // Ignore modifier-only presses
+                if (keyval === Gdk.KEY_Shift_L ||
+                    keyval === Gdk.KEY_Shift_R ||
+                    keyval === Gdk.KEY_Control_L ||
+                    keyval === Gdk.KEY_Control_R ||
+                    keyval === Gdk.KEY_Alt_L ||
+                    keyval === Gdk.KEY_Alt_R ||
+                    keyval === Gdk.KEY_Super_L ||
+                    keyval === Gdk.KEY_Super_R ||
+                    keyval === Gdk.KEY_Meta_L ||
+                    keyval === Gdk.KEY_Meta_R ||
+                    keyval === Gdk.KEY_Caps_Lock ||
+                    keyval === Gdk.KEY_Num_Lock) {
+                    return false;
+                }
+
+                // Escape without modifiers = cancel
+                const mods = state &
+                    (Gdk.ModifierType.SHIFT_MASK |
+                     Gdk.ModifierType.CONTROL_MASK |
+                     Gdk.ModifierType.ALT_MASK |
+                     Gdk.ModifierType.SUPER_MASK |
+                     Gdk.ModifierType.META_MASK);
+
+                if (keyval === Gdk.KEY_Escape && mods === 0) {
+                    dialog.close();
+                    return true;
+                }
+
+                const accel = Gtk.accelerator_name(keyval, mods);
+                if (accel) {
+                    entryRow.text = accel;
+                    this.getSettings().set_string(
+                        bind + '-keys', accel);
+                }
+                dialog.close();
+                return true;
+            });
+
+        dialog.add_controller(controller);
+        dialog.present();
     }
 
     /* Create Combo Row */
