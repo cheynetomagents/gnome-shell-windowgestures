@@ -293,9 +293,10 @@ export default class extends ExtensionPreferences {
             bind, el, 'value', Gio.SettingsBindFlags.DEFAULT);
     }
 
-    /* Create Action Combo Row with optional keystroke entry + record button */
+    /* Create Action Combo Row with optional keystroke row */
     _createActionCombo(parent, bind, title, subtitle, items) {
         const SEND_KEYSTROKES_ID = 24;
+        const settings = this.getSettings();
         const itemStr = new Gtk.StringList();
         for (var i = 0; i < items.length; i++) {
             itemStr.append(items[i]);
@@ -304,41 +305,70 @@ export default class extends ExtensionPreferences {
             title: title,
             subtitle: subtitle,
             model: itemStr,
-            selected: this.getSettings().get_int(bind),
+            selected: settings.get_int(bind),
         });
 
-        const entryRow = new Adw.EntryRow({
-            title: "Keystroke (e.g. <Control><Shift>t, <Super>e)",
-            text: this.getSettings().get_string(bind + '-keys'),
-            visible: (comboRow.selected === SEND_KEYSTROKES_ID),
-        });
-        entryRow.connect('changed', widget => {
-            this.getSettings().set_string(bind + '-keys', widget.text);
+        // Shortcut display row with keycap label and record button
+        const currentAccel = settings.get_string(bind + '-keys');
+
+        const shortcutLabel = new Gtk.ShortcutLabel({
+            accelerator: currentAccel || '',
+            disabled_text: 'Not set',
+            valign: Gtk.Align.CENTER,
         });
 
         const recordBtn = new Gtk.Button({
-            icon_name: 'media-record-symbolic',
-            tooltip_text: 'Record shortcut',
+            label: 'Record',
             valign: Gtk.Align.CENTER,
-            css_classes: ['flat'],
+            css_classes: ['suggested-action'],
         });
+
+        const suffixBox = new Gtk.Box({
+            orientation: Gtk.Orientation.HORIZONTAL,
+            spacing: 12,
+            valign: Gtk.Align.CENTER,
+        });
+        suffixBox.append(shortcutLabel);
+        suffixBox.append(recordBtn);
+
+        const shortcutRow = new Adw.ActionRow({
+            title: 'Shortcut',
+            subtitle: 'Click Record or type GTK accelerator (e.g. &lt;Control&gt;&lt;Shift&gt;t)',
+            visible: (comboRow.selected === SEND_KEYSTROKES_ID),
+        });
+        shortcutRow.add_suffix(suffixBox);
+
+        // Manual entry row for typing accelerator strings
+        const entryRow = new Adw.EntryRow({
+            title: "Accelerator string",
+            text: currentAccel,
+            visible: (comboRow.selected === SEND_KEYSTROKES_ID),
+        });
+        entryRow.connect('changed', widget => {
+            settings.set_string(bind + '-keys', widget.text);
+            shortcutLabel.accelerator = widget.text || '';
+        });
+
         recordBtn.connect('clicked', () => {
             this._showKeystrokeDialog(
-                entryRow.get_root(), entryRow, bind);
+                shortcutRow.get_root(), entryRow,
+                shortcutLabel, bind);
         });
-        entryRow.add_suffix(recordBtn);
 
         comboRow.connect('notify::selected', widget => {
-            this.getSettings().set_int(bind, widget.selected);
-            entryRow.visible = (widget.selected === SEND_KEYSTROKES_ID);
+            settings.set_int(bind, widget.selected);
+            const show = (widget.selected === SEND_KEYSTROKES_ID);
+            shortcutRow.visible = show;
+            entryRow.visible = show;
         });
 
         parent.add(comboRow);
+        parent.add(shortcutRow);
         parent.add(entryRow);
     }
 
     /* Show shortcut capture dialog */
-    _showKeystrokeDialog(parentWindow, entryRow, bind) {
+    _showKeystrokeDialog(parentWindow, entryRow, shortcutLabel, bind) {
         const dialog = new Gtk.Window({
             modal: true,
             transient_for: parentWindow,
@@ -409,6 +439,7 @@ export default class extends ExtensionPreferences {
                 const accel = Gtk.accelerator_name(keyval, mods);
                 if (accel) {
                     entryRow.text = accel;
+                    shortcutLabel.accelerator = accel;
                     this.getSettings().set_string(
                         bind + '-keys', accel);
                 }
