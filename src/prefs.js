@@ -308,14 +308,7 @@ export default class extends ExtensionPreferences {
             selected: settings.get_int(bind),
         });
 
-        // Shortcut display row with keycap label and record button
         const currentAccel = settings.get_string(bind + '-keys');
-
-        const shortcutLabel = new Gtk.ShortcutLabel({
-            accelerator: currentAccel || '',
-            disabled_text: 'Not set',
-            valign: Gtk.Align.CENTER,
-        });
 
         const recordBtn = new Gtk.Button({
             label: 'Record',
@@ -323,52 +316,38 @@ export default class extends ExtensionPreferences {
             css_classes: ['suggested-action'],
         });
 
-        const suffixBox = new Gtk.Box({
-            orientation: Gtk.Orientation.HORIZONTAL,
-            spacing: 12,
-            valign: Gtk.Align.CENTER,
-        });
-        suffixBox.append(shortcutLabel);
-        suffixBox.append(recordBtn);
-
-        const shortcutRow = new Adw.ActionRow({
-            title: 'Shortcut',
-            subtitle: 'Click Record or type GTK accelerator (e.g. &lt;Control&gt;&lt;Shift&gt;t)',
-            visible: (comboRow.selected === SEND_KEYSTROKES_ID),
-        });
-        shortcutRow.add_suffix(suffixBox);
-
-        // Manual entry row for typing accelerator strings
         const entryRow = new Adw.EntryRow({
-            title: "Accelerator string",
+            title: "Shortcut",
             text: currentAccel,
+            show_apply_button: false,
             visible: (comboRow.selected === SEND_KEYSTROKES_ID),
         });
+        if (!currentAccel) {
+            entryRow.set_placeholder_text(
+                'Click Record or type GTK accelerator');
+        }
+        entryRow.add_suffix(recordBtn);
+
         entryRow.connect('changed', widget => {
             settings.set_string(bind + '-keys', widget.text);
-            shortcutLabel.accelerator = widget.text || '';
         });
 
         recordBtn.connect('clicked', () => {
             this._showKeystrokeDialog(
-                shortcutRow.get_root(), entryRow,
-                shortcutLabel, bind);
+                entryRow.get_root(), entryRow, bind);
         });
 
         comboRow.connect('notify::selected', widget => {
             settings.set_int(bind, widget.selected);
-            const show = (widget.selected === SEND_KEYSTROKES_ID);
-            shortcutRow.visible = show;
-            entryRow.visible = show;
+            entryRow.visible = (widget.selected === SEND_KEYSTROKES_ID);
         });
 
         parent.add(comboRow);
-        parent.add(shortcutRow);
         parent.add(entryRow);
     }
 
     /* Show shortcut capture dialog */
-    _showKeystrokeDialog(parentWindow, entryRow, shortcutLabel, bind) {
+    _showKeystrokeDialog(parentWindow, entryRow, bind) {
         const dialog = new Gtk.Window({
             modal: true,
             transient_for: parentWindow,
@@ -439,7 +418,6 @@ export default class extends ExtensionPreferences {
                 const accel = Gtk.accelerator_name(keyval, mods);
                 if (accel) {
                     entryRow.text = accel;
-                    shortcutLabel.accelerator = accel;
                     this.getSettings().set_string(
                         bind + '-keys', accel);
                 }
