@@ -317,19 +317,20 @@ export default class extends ExtensionPreferences {
         });
 
         const entryRow = new Adw.EntryRow({
-            title: "Shortcut",
+            title: currentAccel
+                ? "Shortcut"
+                : "Click Record or type GTK accelerator",
             text: currentAccel,
             show_apply_button: false,
             visible: (comboRow.selected === SEND_KEYSTROKES_ID),
         });
-        if (!currentAccel) {
-            entryRow.set_placeholder_text(
-                'Click Record or type GTK accelerator');
-        }
         entryRow.add_suffix(recordBtn);
 
         entryRow.connect('changed', widget => {
             settings.set_string(bind + '-keys', widget.text);
+            widget.title = widget.text
+                ? "Shortcut"
+                : "Click Record or type GTK accelerator";
         });
 
         recordBtn.connect('clicked', () => {
