@@ -2535,17 +2535,38 @@ class Manager {
         }
 
         else if (id == 24) {
-            if (!state || progress < 1.0) {
-                return;
-            }
-            // Send custom keystrokes
+            // Send custom keystrokes - repeats on each progress unit
             let slotName = this._gesture.slotName;
-            if (slotName) {
-                let accel = this._settings.get_string(slotName + '-keys');
-                let keys = this._parseAccelerator(accel);
-                if (keys && keys.length > 0) {
-                    this._sendKeyPress(keys);
+            if (!slotName) return;
+
+            let wid = 'keystroke_count';
+            if (!state) {
+                // During gesture: fire each time a new unit is crossed
+                let count = Math.floor(oprog || 0);
+                let prev = this._actionWidgets[wid] || 0;
+                if (count > prev) {
+                    let accel = this._settings.get_string(
+                        slotName + '-keys');
+                    let keys = this._parseAccelerator(accel);
+                    if (keys && keys.length > 0) {
+                        for (let i = prev; i < count; i++) {
+                            this._sendKeyPress(keys);
+                        }
+                    }
+                    this._actionWidgets[wid] = count;
                 }
+            } else {
+                // Gesture ended: fire once if never fired and completed
+                let prev = this._actionWidgets[wid] || 0;
+                if (prev === 0 && progress >= 1.0) {
+                    let accel = this._settings.get_string(
+                        slotName + '-keys');
+                    let keys = this._parseAccelerator(accel);
+                    if (keys && keys.length > 0) {
+                        this._sendKeyPress(keys);
+                    }
+                }
+                this._actionWidgets[wid] = 0;
             }
         }
 
