@@ -605,15 +605,16 @@ class Manager {
         global.window_manager.emit("hide-tile-preview");
     }
 
-    // Simulate keypress (up -> down)
+    // Simulate keypress (down -> up)
     _sendKeyPress(combination) {
         combination.forEach(key => this._virtualKeyboard.notify_keyval(
             Clutter.get_current_event_time(), key, Clutter.KeyState.PRESSED)
         );
-        combination.reverse().forEach(key =>
+        for (let i = combination.length - 1; i >= 0; i--) {
             this._virtualKeyboard.notify_keyval(
-                Clutter.get_current_event_time(), key, Clutter.KeyState.RELEASED
-            ));
+                Clutter.get_current_event_time(),
+                combination[i], Clutter.KeyState.RELEASED);
+        }
     }
 
     // Move Mouse Pointer
@@ -2540,33 +2541,36 @@ class Manager {
             if (!slotName) return;
 
             let wid = 'keystroke_count';
+            let cid = 'keystroke_keys';
+
+            // Cache parsed keys for duration of gesture
+            if (!this._actionWidgets[cid]) {
+                let accel = this._settings.get_string(
+                    slotName + '-keys');
+                this._actionWidgets[cid] =
+                    this._parseAccelerator(accel);
+            }
+            let keys = this._actionWidgets[cid];
+
             if (!state) {
                 // During gesture: fire each time a new unit is crossed
                 let count = Math.floor(oprog || 0);
                 let prev = this._actionWidgets[wid] || 0;
-                if (count > prev) {
-                    let accel = this._settings.get_string(
-                        slotName + '-keys');
-                    let keys = this._parseAccelerator(accel);
-                    if (keys && keys.length > 0) {
-                        for (let i = prev; i < count; i++) {
-                            this._sendKeyPress(keys);
-                        }
+                if (count > prev && keys && keys.length > 0) {
+                    for (let i = prev; i < count; i++) {
+                        this._sendKeyPress(keys);
                     }
                     this._actionWidgets[wid] = count;
                 }
             } else {
                 // Gesture ended: fire once if never fired and completed
                 let prev = this._actionWidgets[wid] || 0;
-                if (prev === 0 && progress >= 1.0) {
-                    let accel = this._settings.get_string(
-                        slotName + '-keys');
-                    let keys = this._parseAccelerator(accel);
-                    if (keys && keys.length > 0) {
-                        this._sendKeyPress(keys);
-                    }
+                if (prev === 0 && progress >= 1.0 &&
+                    keys && keys.length > 0) {
+                    this._sendKeyPress(keys);
                 }
                 this._actionWidgets[wid] = 0;
+                this._actionWidgets[cid] = null;
             }
         }
 

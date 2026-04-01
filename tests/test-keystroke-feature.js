@@ -397,6 +397,62 @@ section('extension – action 24 handler and parser');
 
     assert('handler resets counter on gesture end',
         ext.includes("this._actionWidgets[wid] = 0"));
+
+    assert('handler caches parsed keys in actionWidgets',
+        ext.includes("'keystroke_keys'"));
+
+    assert('handler clears key cache on gesture end',
+        ext.includes("this._actionWidgets[cid] = null"));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  6. _sendKeyPress does not mutate input array
+// ═══════════════════════════════════════════════════════════════════════════
+section('_sendKeyPress – no array mutation');
+{
+    const ext = readFileSync(resolve(SRC, 'extension.js'), 'utf8');
+
+    assert('does not call .reverse() on combination',
+        !ext.includes('combination.reverse()'));
+
+    assert('uses reverse iteration for key release',
+        ext.includes('combination.length - 1'));
+}
+
+// Functional test: simulate _sendKeyPress and verify array stability
+{
+    let pressOrder = [];
+    let releaseOrder = [];
+    const mockKb = {
+        notify_keyval: (_t, key, state) => {
+            if (state === 'PRESSED') pressOrder.push(key);
+            else releaseOrder.push(key);
+        }
+    };
+
+    function _sendKeyPress(combination) {
+        combination.forEach(key => mockKb.notify_keyval(0, key, 'PRESSED'));
+        for (let i = combination.length - 1; i >= 0; i--) {
+            mockKb.notify_keyval(0, combination[i], 'RELEASED');
+        }
+    }
+
+    const keys = ['Ctrl', 'Shift', 'T'];
+    const keysCopy = [...keys];
+
+    // Call twice to verify no mutation
+    _sendKeyPress(keys);
+    _sendKeyPress(keys);
+
+    assertEq('array unchanged after two calls', keys, keysCopy);
+    assertEq('press order correct (call 1)',
+        pressOrder.slice(0, 3), ['Ctrl', 'Shift', 'T']);
+    assertEq('press order correct (call 2)',
+        pressOrder.slice(3, 6), ['Ctrl', 'Shift', 'T']);
+    assertEq('release order reversed (call 1)',
+        releaseOrder.slice(0, 3), ['T', 'Shift', 'Ctrl']);
+    assertEq('release order reversed (call 2)',
+        releaseOrder.slice(3, 6), ['T', 'Shift', 'Ctrl']);
 }
 
 
