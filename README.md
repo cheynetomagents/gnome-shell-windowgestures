@@ -1,7 +1,7 @@
 # Window Gestures
 
 Window Gestures is GNOME Shell extension for managing window with touchpad gestures.
-Support only for GNOME 45.
+Supports GNOME 45-49.
 
 ## Installation
 [![Get from GNOME Extension](./gext.svg)](https://extensions.gnome.org/extension/6343/window-gestures/)
@@ -51,7 +51,37 @@ Support only for GNOME 45.
  * Quick settings
  * Notification
  * Run (Alt+F2)
+ * **Send keystrokes** - map any gesture to a custom key combination
 
+### Send Keystrokes
+
+The **Send keystrokes** action lets you map any gesture to an arbitrary keyboard shortcut. When selected in the preferences dropdown, an entry row appears where you can:
+
+ * **Type** a GTK accelerator string directly (e.g. `<Control><Shift>t`, `<Super>e`, `<Alt>F4`)
+ * **Record** a shortcut by clicking the "Record" button and pressing the desired key combination
+
+Keystrokes repeat during a continuous swipe -- each unit of swipe distance fires the keystroke again. This makes it ideal for actions like cycling through browser tabs with `<Control>Page_Down` / `<Control>Page_Up`.
+
+#### Accelerator format
+
+| Format | Keys sent |
+|--------|-----------|
+| `<Control>c` | Ctrl+C |
+| `<Control><Shift>t` | Ctrl+Shift+T |
+| `<Super>e` | Super+E |
+| `<Alt>F4` | Alt+F4 |
+| `F5` | F5 |
+| `<Control>Page_Down` | Ctrl+Page Down |
+
+Supported modifiers: `Control` (or `Ctrl`), `Shift`, `Alt`, `Super`, `Meta`, `Primary` (alias for Control).
+
+## Tests
+
+Run the test suite with:
+
+```
+node tests/test-keystroke-feature.js
+```
 
 ## Demo
  [![Improve Touchpad GNOME Experience with Window Gesture](https://img.youtube.com/vi/HHDjraAE6sc/0.jpg)](https://www.youtube.com/watch?v=HHDjraAE6sc)
